@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Map Client</title>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<link rel="stylesheet" href="//cdn.leafletjs.com/leaflet-0.7/leaflet.css" />
+<script src="//cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+<style type="text/css">
+* {
+font-family:sans-serif;
+}
+</style>
+</head>
+<body>
+
+<script type="application/x-javascript">
+$(document).ready(function() {
+    var map = L.map('map', {
+        scrollWheelZoom: false
+    });
+
+    var geojson = <?php print($mapPostsGeoJsonOutput); ?>;
+
+    L.tileLayer('http://{s}.tile.cloudmade.com/{key}/22677/256/{z}/{x}/{y}.png', {
+        attribution: 'Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2012 CloudMade',
+        key: 'BC9A493B41014CAABB98F0471D759707'
+    }).addTo(map);
+
+    var geoJsonLayer = L.geoJson(geojson, {
+        onEachFeature: function(feature, layer) {
+            var popupContent = feature.properties.popupContent;
+
+            if(popupContent === '') {
+                popupContent = '[No Message]';
+            }
+
+            layer.bindPopup(popupContent);
+        }
+    });
+    
+    geoJsonLayer.addTo(map);
+
+    map.fitBounds(geoJsonLayer);
+});
+</script>
+
+<div id="info">
+    <h1><?=$mapItem->name?></h1>
+    <p><?=$mapItem->description?></p>
+    <p><?=$mapItem->users[0]->name?></p>
+</div>
+
+<div id="map" style="width:100%; height:400px;"></div>
+
+<div id="posts">
+    <h2>Posts</h2>
+    <ul>
+    <?php foreach ($mapPosts as $post) { ?>
+        <li>
+            <p><?=$post->message?></p>
+            <p>
+            <?php
+            if (isset($post->externals[0]) && $post->externals[0]->embed_html) {
+                print ($post->externals[0]->embed_html);
+            } else if (isset($post->externals[0]) && isset($post->externals[0]->images[0]) && $post->externals[0]->images[0]->url) {
+                print('<img src="'.$post->externals[0]->images[0]->url.'">');
+            } else if (isset($post->media[0])) {
+                print('<img src="'.$post->media[0]->file_location.$post->media[0]->filename.'">');
+            }
+            ?>
+            </p>
+            <p>Posted <?=date('Y-m-d', $post->date_posted)?> by <?=$post->users[0]->username?></p>
+        </li>
+    <?php } ?>
+</div>
+
+<div id="tags">
+    <h2>Tags</h2>
+    <ul>
+    <?php foreach ($mapTags as $tag) { ?>
+        <li><?=$tag->tag?> (<?=$tag->users_count?>)</li>
+    <?php } ?>
+    </ul>
+</div>
+
+</body>
+</html>
